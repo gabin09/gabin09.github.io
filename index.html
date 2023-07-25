@@ -30,26 +30,27 @@
     <button id="restartButton" style="display: none;">다시 시작</button>
 
     <script>
-        var remainingChances = 10;
-        var secretPassword = generateRandomPassword(); // 비밀번호 생성
+        // 사용자가 하는 일: 비밀번호 생성
+        var secretPassword = generateRandomPassword();
         var hintCount = 1;
 
-        // 추측 버튼 클릭 시 힌트를 확인하고 기회를 체크하는 함수
+        // AI가 하는 일: 추측 버튼 클릭 시 힌트를 확인하고 기회를 체크하는 함수
         document.querySelector('form').addEventListener('submit', function(event) {
             event.preventDefault();
+            decreaseChances();
+            checkGameOver();
+            
             var guess = document.getElementById('guess').value;
             var hint = getHint(guess, secretPassword);
             document.getElementById('hint').innerHTML += hintCount + '. ' + hint + '<br>';
             hintCount++;
-            decreaseChances();
-            checkGameOver();
         });
 
-        // 다시 시작 버튼 클릭 시 게임을 재시작하는 함수
+        // AI가 하는 일: 다시 시작 버튼 클릭 시 게임을 재시작하는 함수
         document.getElementById('restartButton').addEventListener('click', function() {
-            remainingChances = 10;
             secretPassword = generateRandomPassword();
             hintCount = 1;
+            remainingChances = 10;
             document.getElementById('chances').textContent = remainingChances;
             document.getElementById('hint').textContent = '';
             document.getElementById('guess').value = '';
@@ -57,7 +58,7 @@
             document.querySelector('form input[type="submit"]').disabled = false;
         });
 
-        // 4자리 랜덤 비밀번호 생성
+        // AI가 하는 일: 4자리 랜덤 비밀번호 생성
         function generateRandomPassword() {
             var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             var password = [];
@@ -72,7 +73,7 @@
             return password.join('');
         }
 
-        // 힌트 생성 함수
+        // 사용자가 하는 일: 힌트 생성 함수
         function getHint(guess, password) {
             var strike = 0;
             var ball = 0;
@@ -88,13 +89,13 @@
             return '스트라이크: ' + strike + ', 볼: ' + ball;
         }
 
-        // 남은 기회 감소 함수
+        // 사용자가 하는 일: 남은 기회 감소 함수
         function decreaseChances() {
             remainingChances--;
             document.getElementById('chances').textContent = remainingChances;
         }
 
-        // 게임 종료 조건 체크 함수
+        // 사용자가 하는 일: 게임 종료 조건 체크 함수
         function checkGameOver() {
             if (remainingChances === 0) {
                 document.getElementById('hint').innerHTML += '게임 오버! 정답은 ' + secretPassword + '입니다.';
