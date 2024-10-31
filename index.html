@@ -3,77 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Happy New Year 2024</title>
+    <title>룰렛 게임</title>
     <style>
         body {
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            margin: 0;
-            background-color: #f2f2f2;
-            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
         }
-
-        #newYearMessage {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
+        .roulette_container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: white;
+        }
+        .roulette_screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .roulette_box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-origin: center center;
+        }
+        .point {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            z-index: 10;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border: 2px solid #333;
+            z-index: 20;
+        }
+        .modal.hide {
             display: none;
         }
-
-        #duckWisdomButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4285f4;
-            color: #fff;
-            cursor: pointer;
-        }
-
-        #duckWisdom {
-            display: none;
-            text-align: left;
-            margin-top: 20px;
+        .center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: transparent;
+            border: none;
         }
     </style>
 </head>
 <body>
-    <div id="newYearMessage">HAPPY NEW YEAR 2024</div>
-    <button id="duckWisdomButton" onclick="showDuckWisdom()">덕담 보기</button>
-    <div id="duckWisdom"></div>
 
-    <script>
-        function showDuckWisdom() {
-            document.getElementById('duckWisdomButton').style.display = 'none';
-            document.getElementById('duckWisdom').style.display = 'block';
+<div class="roulette_container">
+    <div class="roulette_screen">
+        <div class="point">
+            <img src="./src/pointer.png" alt="roulette pointer">
+        </div>
+        <div class="roulette_box">
+            <img src="./src/roulette.png" alt="roulette board">
+        </div>
+        <button class="center btn" type="button">
+            <img src="./src/center.png" alt="roulette start button">
+        </button>
+    </div>
 
-            const wisdomList = [
-“새해에는 건강이 최고입니다.”
-”새로운 시작을 응원해요.“
-“새해엔 새로운 도전을 시도해보세요.“
-”행운이 가득한 한 해가 되길 기원해요.”
-“성공과 행복이 함께하는 새해가 되길 바라요.“
-”새로운 계획을 세워보세요.”
-“가족과 함께 보내는 특별한 순간들이 쌓이길 기대해봐요.”
-”미소 짓는 습관을 가지세요.“
-“주변 사람들에게 감사의 마음을 표현하세요.”
-”좋은 책을 읽어보는 것도 좋은 방법이에요.“
-“새로운 친구를 사귀어보세요.“
-”꾸준한 노력이 큰 성과를 가져다줄 거예요.”
-“목표를 세우고 달성해보세요.“
-자신을 믿어보세요.”
-”새로운 경험을 즐겨보세요.“
-“예쁜 꽃을 한 송이씩 더 많이 보세요.”
-”자연 속에서 힐링을 찾아보세요.“
-“새로운 음악을 발견해보세요.”
-”자기 개발에 힘써보세요.“
-“긍정적인 생각을 갖도록 노력해보세요.“
-            ];
+    <div class="modal hide">
+        <div class="result_text">
+            <span class="point_text">100p</span>
+            <span class="prefix_text">에 당첨되셨습니다!</span>
+        </div>
+        <button type="button">확인</button>
+    </div>
+</div>
 
-            const randomIndex = Math.floor(Math.random() * wisdomList.length);
-            document.getElementById('duckWisdom').innerText = wisdomList[randomIndex];
-        }
-    </script>
+<script>
+class Roulette {
+    constructor(el, config = {}, result = []) {
+        this.el = document.querySelector(el);
+
+        // DOM Elements
+        this.roulette = this.el.querySelector('.roulette_screen .roulette_box');
+        this.rouletteButton = this.el.querySelector('.center.btn');
+        this.resultModal = this.el.querySelector('.modal');
+        this.resultModalText = this.el.querySelector('.modal .result_text .prefix_text');
+        this.resultModalTextPoint = this.el.querySelector('.modal .result_text .point_text');
+        this.resultModalButton = this.el.querySelector('.modal button');
+
+        // Roulette Config
+        this.duration = config.duration || 3500;
+        this.defaultSpin = config.defaultSpin || 4;
+        this.offset = config.offset || 45;
+        this.startPosition = config.startPosition || 0;
+        this.exceptResult = config.exceptResult || [];
+
+        // Roulette State
+        this.rotatePos = 0;
+        this.spin = false;
+        this.modalStatus = false;
+
+        // Roulette Result
+        this.result = result;
+
+        // Event Binding
+        this.rouletteButton.addEventListener('click', () => this.start());
+        this.resultModalButton.addEventListener('click', () => this.hideModal());
+        window.addEventListener('keydown', (e) => {
+            if (this.modalStatus) {
+                if (String(e.keyCode).match(/13|32|27/i)) this.hideModal();
+            } else {
+                if (String(e.keyCode).match(/13|32/i)) this.start();
+            }
+        });
+
+        this.init();
+    }
+
+    init() {
+        const { roulette, startPosition } = this;
+        this.timer && clearTimeout(this.timer);
+
+        roulette.style.cssText = `
+            transition: none;
+            transform: rotate(${startPosition}deg);
+        `;
+
+        this.hideModal();
+    }
+
+    start(fixedAmount) {
+        if (this.spin) return;
+        this.init();
+
+        const { result, roulette, duration, defaultSpin, offset, exceptResult, getRangeRandom } = this;
+        this.spin = true;
+
+        this.timer = setTimeout(() => {
+            this.rotatePos = (fixedAmount !== undefined 
+                ? getRangeRandom(result[fixedAmount].range[0], result[fixedAmount].range[1])
+                : Math.floor(Math.random() * 360)
+            ) + (360 * defaultSpin) - offset;
+
+            if (exceptResult.length > 0) {
+                let except = exceptResult.map(el => result[el].range);
+                except.forEach(([start, end]) => {
+                    if ((this.rotatePos % 360 + offset) >= start && (this.rotatePos % 360 + offset) <= end) {
+                        const noneExcept = result.filter(({ range }) => !except.includes(range));
+                        const ranNumber = Math.floor(Math.random() * noneExcept.length);
+
+                        this.rotatePos = getRangeRandom(noneExcept[ranNumber].range[0], noneExcept[ranNumber].range[1]) + (360 * defaultSpin) - offset;
+                    }
+                });
+            }
+
+            roulette.style.cssText = `
+                transition: all ${duration}ms cubic-bezier(0, 0, 0, 1); 
+                transform: rotate(${this.rotatePos}deg);
+            `;
+
+            this.getResult();
+        }, 0);
+    }
+
+    getRangeRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    getResult() {
+        const { rotatePos, duration, result, offset } = this;
+        const realPos = ((rotatePos % 360) + offset) % 360;
+
+        this.timer = setTimeout(() => {
+            result.forEach(({ name, range: [start, end] }) => {
+                if (start <= realPos && end >= realPos) {
+                    this.renderModalText(name);
+                    this.spin = false;
+                    this.showModal();
+                }
+            });
+        }, duration);
+    }
+
+    renderModalText(text) {
+        this.resultModalTextPoint.innerHTML = text;
+        this.resultModalText.innerHTML = text === '꽝!' ? '아쉽지만 다음 기회에...' : '축하합니다!';
+    }
+
+    showModal() {
+        this.resultModal.classList.remove('hide');
+        this.modalStatus = true;
+    }
+
+    hideModal() {
+        this.resultModal.classList.add('hide');
+        this.modalStatus = false;
+    }
+}
+
+// Roulette 인스턴스 생성 예시
+const rouletteConfig = {
+    duration: 3500,
+    defaultSpin: 4,
+    offset: 45,
+    startPosition: 0,
+    exceptResult: []
+};
+
+const rouletteResult = [
+    { name: '꽝!', range: [0, 30] },
+    { name: '100p', range: [31, 90] },
+    { name: '200p', range: [91, 150] },
+    // 추가 결과를 여기에 추가
+];
+
+const roulette = new Roulette('.roulette_container', rouletteConfig, rouletteResult);
+</script>
+
 </body>
 </html>
